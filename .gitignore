@@ -1,3 +1,9 @@
-sheets_service/credentials.json
+credentials.json
 venv/*
 sheets_test.py
+coinapi_service/coin_choices.txt
+
+coinapi_service/__pycache__/
+sheets_service/__pycache__/
+coin_choices.txt
+token.json
