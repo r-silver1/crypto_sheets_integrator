@@ -6,7 +6,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from string import ascii_uppercase
 import re
-
+import csv
 
 class SheetsDao:
     def __init__(self, SCOPES=['https://www.googleapis.com/auth/spreadsheets']):
@@ -83,7 +83,16 @@ class SheetsDao:
     def write_sheet_values(self):
         self.__get_id__()
         self.__get_range__()
+        self.__store_session__()
         pass
+
+    def __store_session__(self):
+        fields = ["SCOPES", "URL", "SPREADSHEET_ID", "RANGE_NAME"]
+        row = [self.SCOPES, os.path.join('https://docs.google.com/spreadsheets/d/', self.SPREADSHEET_ID), self.SPREADSHEET_ID, self.RANGE_NAME]
+        with open('sheets_session.csv', 'w') as csv_f:
+            csvwriter = csv.writer(csv_f)
+            csvwriter.writerow(fields)
+            csvwriter.writerow(row)
 
     def __get_next_letter__(self):
         '''a generator to yield a new range secondary value, given starting cell'''
@@ -104,10 +113,27 @@ class SheetsDao:
             yield first_letter+f"{first_num}"+":"+second_letter+f"{second_num}"
 
     def write_crypto(self, crypto_values):
-        self.__get_id__()
-        self.__get_range__()
-        letter_gen = self.__get_next_letter__()
+        # TODO: handling session loading could probably happen earlier and move this code to separate function
+        if os.path.exists('sheets_session.csv'):
+            with open('sheets_session.csv') as csv_f:
+                csv_reader = csv.DictReader(csv_f)
+                c_dict = next(csv_reader)
+            in_txt = ""
+            while in_txt != "y" and in_txt != "n":
+                in_txt = input(f"A sheets session configuration file (coinchoices.txt) already exists.\nurl: {c_dict['URL']}\nwould you like to use it? (y) or create a new one? (n): ")
+            if in_txt == "y":
+                pass
+                self.SCOPES = c_dict['SCOPES']
+                self.SPREADSHEET_ID = c_dict['SPREADSHEET_ID']
+                self.RANGE_NAME = c_dict['RANGE_NAME']
+            else:
+                self.__get_id__()
+                self.__get_range__()
+        else:
+            self.__get_id__()
+            self.__get_range__()
 
+        letter_gen = self.__get_next_letter__()
 
         for _ in crypto_values:
             curr_range = next(letter_gen)
@@ -121,6 +147,7 @@ class SheetsDao:
         update_req = self.sheet.values().update(spreadsheetId=self.SPREADSHEET_ID, range=curr_range, valueInputOption="USER_ENTERED", body=update_body)
         update_res = update_req.execute()
         print(update_res)
+        self.__store_session__()
 
 
 if __name__ == "__main__":

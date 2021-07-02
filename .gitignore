@@ -7,3 +7,4 @@ coinapi_service/__pycache__/
 sheets_service/__pycache__/
 coin_choices.txt
 token.json
+sheets_session.csv
